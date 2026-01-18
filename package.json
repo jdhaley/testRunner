@@ -1,0 +1,12 @@
+{
+  "name": "testrunner",
+  "version": "1.0.0",
+  "description": "A project with Express dependency.",
+  "main": "model.ts",
+  "scripts": {
+    "start": "node model.ts"
+  },
+  "dependencies": {
+    "express": "^4.18.2"
+  }
+}

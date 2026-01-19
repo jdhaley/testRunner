@@ -31,6 +31,7 @@ export interface Message {
 }
 
 export interface Emulator {
+    name: string;
     /** Start & Initialize */
     start(): Promise<void>;
     send(m: Message): Promise<void>;

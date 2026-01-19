@@ -1,6 +1,7 @@
+import { Server, Socket } from "net";
+import { Buffer } from "buffer";
 import { Emulator, Message, Receiver } from "./model";
 import { startServer, stopServer, createConnection } from "./net-utils";
-import { Server, Socket } from "net";
 
 /**
  * TCP Emulator
@@ -72,20 +73,22 @@ export abstract class LengthFramingTcpEmulator extends TcpEmulator {
             // Not enough for header
             if (this.buffer.length < headerSize) return;
 
-            const messageLength = this.getMessageLength(this.buffer);
+            const payloadLength = this.getPayloadLength(this.buffer);
 
             // Not enough for full message
-            if (this.buffer.length < messageLength) return;
+            if (this.buffer.length < headerSize + payloadLength) return;
 
-            const rawMessage = this.buffer.subarray(0, messageLength);
+            const payload = this.buffer.subarray(
+                headerSize,
+                headerSize + payloadLength
+            );
 
-            this.buffer = this.buffer.subarray(messageLength);
-            const message = this.unmarshal(rawMessage);
+            this.buffer = this.buffer.subarray(headerSize + payloadLength);
+            const message = this.unmarshal(payload);
             this.receiver.receive(message);
         }
     }
 
     // e.g. buffer.readUInt32BE(0);
-    protected abstract getMessageLength(buffer: Buffer): number
+    protected abstract getPayloadLength(buffer: Buffer): number
 }
-

@@ -1,14 +1,10 @@
 import { Emulator, Message, Receiver, Scenario, Step, Test, TestResult } from "./model";
 
-// ----------------------------
-// Scenario Orchestrator
-// ----------------------------
-
 /**
  * A Receiver that waits until a specific number of messages has been received 
  * or a timeout threshold has been reached.
  */
-class TimedReceiver implements Receiver {
+export class TimedReceiver implements Receiver {
     private responses?: Message[];
 
     receive(response: Message): void {
@@ -32,9 +28,8 @@ class TimedReceiver implements Receiver {
 }
 
 export class TestOrchestrator {
-    constructor(private emulators: Record<string, Emulator>, private defaultTimeout: number) {
+    constructor(private emulators: Record<string, Emulator>, private receiver: TimedReceiver, private defaultTimeout: number) {
     }
-    private receiver = new TimedReceiver();
 
     async run(scenarios: Scenario[]): Promise<TestResult[]> {
         const results: TestResult[] = []

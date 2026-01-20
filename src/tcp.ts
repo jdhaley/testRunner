@@ -1,17 +1,15 @@
 import { Message, Receiver } from "./model";
-import { startServer, stopServer, createConnection } from "./net-utils";
+import { startServer, createConnection } from "./tcp-utils";
 import { Server, Socket } from "net";
 
 export abstract class TcpServer {
+    private buffer: Buffer = Buffer.alloc(0);
     private server?: Server;
     private receiver?: Receiver;
     constructor(
         private listenPort: number,
+        private unmarshaller: Unmarshaller
     ) { }
-
-    /* ----------------------------
-     * Server side (receive)
-     * ---------------------------- */
 
     async start(receiver: Receiver): Promise<void> {
         if (this.receiver) console.warn("Restarting emulator without it being stopped first.")
@@ -22,12 +20,45 @@ export abstract class TcpServer {
     }
 
     async stop(): Promise<void> {
-        this.server && await stopServer(this.server);
+        //this.server && await stopServer(this.server);
         this.receiver = undefined;
     }
 
-    protected abstract processChunk(chunk: Buffer): void;
-    protected abstract unmarshal(content: Buffer): Message;
+    protected forward(message: Message) {
+        if (this.receiver) {
+            this.receiver.receive(message);
+        } else {
+            console.error("Message receiver is undefined (Server not started or is stopped)", message);
+        }
+    }
+
+    protected processChunk(chunk: Buffer) {
+        this.buffer = Buffer.concat([this.buffer, chunk]);
+        while (this.unmarshaller.isMessageAvail(this.buffer)) {
+            const msgLength = this.unmarshaller.getMessageLength(this.buffer);
+            const rawMessage = this.buffer.subarray(0, msgLength);
+
+            this.buffer = this.buffer.subarray(msgLength);
+            
+            const msg = this.unmarshaller.unmarshal(rawMessage);
+            this.forward(msg);
+        }
+    }
+
+}
+
+export abstract class Unmarshaller {
+    isMessageAvail(buffer: Buffer) {
+        return buffer.length >= this.getHeaderLength(buffer)
+            && buffer.length >= this.getMessageLength(buffer);
+    }
+
+    abstract getHeaderLength(buffer: Buffer): number;
+
+    // e.g. buffer.readUInt32BE(0);
+    abstract getMessageLength(buffer: Buffer): number;
+
+    abstract unmarshal(buffer: Buffer): Message;
 }
 
 export abstract class TcpClient {

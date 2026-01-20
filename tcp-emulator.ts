@@ -11,28 +11,31 @@ import { Server, Socket } from "net";
 export abstract class TcpEmulator implements Emulator {
     private server?: Server;
     private clientSocket?: Socket;
-
+    protected receiver?: Receiver;
     constructor(
         public name: string,
         private listenPort: number,
         private remote: {
             host: string,
             port: number,
-        },
-        protected receiver: Receiver
+        }
     ) { }
 
     /* ----------------------------
      * Server side (receive)
      * ---------------------------- */
 
-    async start(): Promise<void> {
-        this.server = await startServer(this.listenPort, (socket) => {
+    async start(receiver: Receiver): Promise<void> {
+        if (this.receiver) console.warn("Restarting emulator without it being stopped first.")
+        this.receiver = receiver;
+        if (!this.server) this.server = await startServer(this.listenPort, (socket) => {
             socket.on("data", (chunk: Buffer) => this.processChunk(chunk));
         });
     }
+    
     async stop(): Promise<void> {
         this.server && await stopServer(this.server);
+        this.receiver = undefined;
     }
 
     protected abstract processChunk(chunk: Buffer): void;
@@ -81,11 +84,14 @@ export abstract class LengthFramingTcpEmulator extends TcpEmulator {
 
             this.buffer = this.buffer.subarray(messageLength);
             const message = this.unmarshal(rawMessage);
-            this.receiver.receive(message);
+            if (this.receiver) {
+                this.receiver.receive(message);
+            } else {
+                console.error("Message receiver is undefined (Sever stopped?) ", message);
+            }
         }
     }
 
     // e.g. buffer.readUInt32BE(0);
     protected abstract getMessageLength(buffer: Buffer): number
 }
-

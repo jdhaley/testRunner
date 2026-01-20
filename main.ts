@@ -1,14 +1,17 @@
-import { Emulator, Message } from "./model";
-import { TestOrchestrator, TimedReceiver } from "./orchestrator";
+import { Message } from "./model";
+import { Orchestrator } from "./orchestrator";
 import { LengthFramingTcpEmulator } from "./tcp-emulator";
+import { Tester } from "./tester";
 
 class TestSim extends LengthFramingTcpEmulator {
     protected getMessageLength(buffer: Buffer): number {
         return buffer.readUInt32BE(0);
     }
+    
     protected getPayload(buffer: Buffer) {
         return buffer.subarray(this.headerSize, this.getMessageLength(buffer));
     }
+
     protected unmarshal(content: Buffer): Message {
         const payload = this.getPayload(content).toString("utf8");
         return {
@@ -29,15 +32,20 @@ class TestSim extends LengthFramingTcpEmulator {
     }
 }
 
-const receiver = new TimedReceiver();
-const em1Remote = {
+class TestSut extends TestSim {
+    // Whenever a message is received, convert the payload to upper case and send it out.
+    protected unmarshal(content: Buffer): Message {
+        const msg = super.unmarshal(content);
+        msg.payload["content"] = ("" + msg.payload["content"]).toUpperCase();
+        this.send(msg);
+        return msg;
+    }
+}
+const sutUrl = {
     host: "127.0.0.1",
-    port: 1411
+    port: 1410
 }
-const em1 = new TestSim("UPPERCASER", 1410, em1Remote, receiver);
-const emulators = mapify(em1);
-const ORCHESTRATOR = new TestOrchestrator(emulators, receiver, 3000);
+const em1 = new TestSim("UPPERCASER", 1410, sutUrl);
 
-function mapify(...emulators: Emulator[]): Record<string, Emulator> {
-    return Object.fromEntries(emulators.map(e => [e.name, e]));
-}
+const otr = new Orchestrator(3000, em1);
+const tester = new Tester(otr);

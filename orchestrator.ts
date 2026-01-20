@@ -1,4 +1,4 @@
-import { Emulator, Message, Receiver, Scenario, Step, Test, TestResult } from "./model";
+import { Emulator, Message, Receiver } from "./model";
 
 /**
  * A Receiver that waits until a specific number of messages has been received 
@@ -7,16 +7,22 @@ import { Emulator, Message, Receiver, Scenario, Step, Test, TestResult } from ".
 export class TimedReceiver implements Receiver {
     private responses?: Message[];
 
-    receive(response: Message): void {
-        this.responses?.push(response)
-    }
     start() {
         this.responses = [];
     }
+
+    receive(response: Message): void {
+        if (this.responses) {
+            this.responses.push(response);
+        } else {
+            console.error("Received message out of step: ", response);
+        }
+    }
+
     async waitForResponses(responseCount: number, timeout: number) {
         if (this.responses) throw new Error("waiting on responses without a corresponding start()")
         this.responses = [];
-        
+
         const responses = this.responses;
         const start = Date.now();
         while (responses.length < responseCount && (Date.now() - start) < timeout) {
@@ -27,56 +33,24 @@ export class TimedReceiver implements Receiver {
     }
 }
 
-export class TestOrchestrator {
-    constructor(private emulators: Record<string, Emulator>, private receiver: TimedReceiver, private defaultTimeout: number) {
+export class Orchestrator extends TimedReceiver {
+    private emulators: Record<string, Emulator>;
+    constructor(
+        private defaultTimeout: number,
+        ...emulators: Emulator[]
+    ) {
+        super();
+        this.emulators = Object.fromEntries(emulators.map(e => [e.name, e]));
     }
 
-    async run(scenarios: Scenario[]): Promise<TestResult[]> {
-        const results: TestResult[] = []
-        for (const scenario of scenarios) {
-            let result: TestResult;
-            try {
-                 result = await this.runScenario(scenario);
-            } catch (error) {
-                result = {
-                    test: scenario,
-                    resultType: "Fail",
-                    failure: "" + error
-                }
-            }
-            results.push(result);
-        }
-        return results;
-    }
-
-    private async runScenario(scenario: Scenario): Promise<TestResult> {
-        const results: TestResult[] = [];
-        let failed: boolean = false;
-        for (let step of scenario.steps) {
-            const result = await this.runStep(step);
-            results.push(result);
-            if (result.resultType === "Fail") {
-                failed = true;
-                if (step.onFailure === "stop") break;
-            }
-        }
-        return {
-            test: scenario,
-            resultType: failed ? "Fail" : "Pass",
-            childResults: results
-        }
-    }
-    private async runStep(step: Step): Promise<TestResult> {
-        this.receiver.start();
-        for (let request of step.messages) {
+    async exec(messages: Message[], responseCount?: number, timeout?: number) {
+        timeout = timeout || this.defaultTimeout
+        this.start();
+        for (let request of messages) {
             const emulator = this.emulators[request.emulatorName];
             if (emulator) emulator.send(request);
         }
         // Wait until we have enough responses or timeout
-        const timeout = step.timeout || this.defaultTimeout
-        const responses = await this.receiver.waitForResponses(step.responseCount, timeout);
-        const results = await step.test(responses);
-        if (results) return results;
-        throw new Error(`Step ${step.name} didn't return any results`);
+        return await this.waitForResponses(responseCount || -1, timeout);
     }
 }

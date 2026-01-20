@@ -1,4 +1,4 @@
-import { Test, TestResult, Message } from "./model";
+import { Test, TestResult, Message } from "../src/model";
 
 export interface MessageTest extends Test<Message[]> {
     corrId?: string;

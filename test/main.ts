@@ -1,7 +1,7 @@
-import { Message } from "./model";
-import { Orchestrator } from "./orchestrator";
-import { LengthFramingTcpEmulator } from "./tcp-emulator";
-import { Tester } from "./tester";
+import { Message } from "../src/model";
+import { Orchestrator } from "../src/orchestrator";
+import { LengthFramingTcpEmulator } from "../src/tcp-emulator";
+import { Tester } from "../src/tester";
 
 class TestSim extends LengthFramingTcpEmulator {
     protected getMessageLength(buffer: Buffer): number {

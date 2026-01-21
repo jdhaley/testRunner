@@ -1,89 +1,86 @@
-import { Message, Receiver } from "./model";
-import { startServer, createConnection } from "./tcp-utils";
-import { Server, Socket } from "net";
+import { createConnection, createServer, Socket } from "net";
 
-export abstract class TcpServer {
-    private buffer: Buffer = Buffer.alloc(0);
-    private server?: Server;
-    private receiver?: Receiver;
-    constructor(
-        private listenPort: number,
-        private unmarshaller: Unmarshaller
-    ) { }
+export interface TcpReceiver {
+    /**
+        Returns the length of a message fully contained in the buffer or -1 
+        when the buffer doesn't contain the entire message, i.e. more data 
+        needs to be received
+    */
+    getMessageLength(data: Buffer): number;
+    /**
+        Receive a message for processing.
+     */
+    receive(msg: Buffer): void
+}
 
-    async start(receiver: Receiver): Promise<void> {
-        if (this.receiver) console.warn("Restarting emulator without it being stopped first.")
-        this.receiver = receiver;
-        if (!this.server) this.server = await startServer(this.listenPort, (socket) => {
-            socket.on("data", (chunk: Buffer) => this.processChunk(chunk));
-        });
+export function startServer(port: number, receiver: TcpReceiver) {
+    const server = createServer((socket: Socket) => createServerConnection(socket));
+    server.listen(port);
+
+    function createServerConnection(socket: Socket) {
+        return new TcpServerConnection(socket, receiver)
+    }
+}
+
+export abstract class TcpConnection  {
+    private buffer = Buffer.alloc(0);
+    constructor(private receiver?: TcpReceiver) {
     }
 
-    async stop(): Promise<void> {
-        //this.server && await stopServer(this.server);
-        this.receiver = undefined;
+    protected start() {
+        this.getConnection().on("data", (data: Buffer) => this.onData(data));
+        this.getConnection().on("close", () => this.onClose());
     }
 
-    protected forward(message: Message) {
-        if (this.receiver) {
-            this.receiver.receive(message);
-        } else {
-            console.error("Message receiver is undefined (Server not started or is stopped)", message);
-        }
+    public send(data: Buffer): void {
+        this.getConnection().write(data);
     }
 
-    protected processChunk(chunk: Buffer) {
-        this.buffer = Buffer.concat([this.buffer, chunk]);
-        while (this.unmarshaller.isMessageAvail(this.buffer)) {
-            const msgLength = this.unmarshaller.getMessageLength(this.buffer);
+    protected onData(data: Buffer) {
+        if (!this.receiver) throw new Error("Connection is not a receiver.");
+
+        this.buffer = Buffer.concat([this.buffer, data]);
+        let msgLength = this.receiver.getMessageLength(this.buffer);
+        while (msgLength > 0) {
             const rawMessage = this.buffer.subarray(0, msgLength);
 
             this.buffer = this.buffer.subarray(msgLength);
-            
-            const msg = this.unmarshaller.unmarshal(rawMessage);
-            this.forward(msg);
+
+            this.receiver.receive(rawMessage);
+            msgLength = this.receiver.getMessageLength(this.buffer);
         }
     }
-
-}
-
-export abstract class Unmarshaller {
-    isMessageAvail(buffer: Buffer) {
-        return buffer.length >= this.getHeaderLength(buffer)
-            && buffer.length >= this.getMessageLength(buffer);
+    private onClose() {
     }
 
-    abstract getHeaderLength(buffer: Buffer): number;
-
-    // e.g. buffer.readUInt32BE(0);
-    abstract getMessageLength(buffer: Buffer): number;
-
-    abstract unmarshal(buffer: Buffer): Message;
+    protected abstract getConnection(): Socket;
 }
 
-export abstract class TcpClient {
-    private clientSocket?: Socket;
+export class TcpServerConnection extends TcpConnection {
+    constructor(private socket: Socket, receiver: TcpReceiver) {
+        super(receiver);
+    }
+
+    protected getConnection(): Socket {
+        return this.socket;
+    }
+}
+
+export class TcpClient extends TcpConnection {
+    private socket?: Socket;
 
     constructor(
-        private server: {
-            host: string,
-            port: number,
-        }
-    ) { }
-
-    public async send(m: Message): Promise<void> {
-        const socket = await this.getClient();
-        socket.write(this.marshal(m));
+        private host: string,
+        private port: number,
+        receiver?: TcpReceiver
+    ) { 
+        super(receiver)
     }
 
-    protected abstract marshal(message: Message): Buffer;
-
-    private async getClient(): Promise<Socket> {
-        if (this.clientSocket && !this.clientSocket.destroyed) {
-            return this.clientSocket;
+    protected getConnection(): Socket {
+        if (!this.socket || this.socket.destroyed) {
+            this.socket = createConnection({ host: this.host, port: this.port });
         }
-        const socket = await createConnection(this.server);
-        this.clientSocket = socket;
-        return socket;
+        return this.socket;
     }
 }

@@ -1,10 +1,11 @@
-import { Emulator, Message, Receiver } from "./model";
+import { Message, MessageReceiver, MessageSender } from "./msg";
+
 
 /**
  * A Receiver that waits until a specific number of messages has been received 
  * or a timeout threshold has been reached.
  */
-export class TimedReceiver implements Receiver {
+export class TimedReceiver implements MessageReceiver {
     private responses?: Message[];
 
     start() {
@@ -34,21 +35,19 @@ export class TimedReceiver implements Receiver {
 }
 
 export class Orchestrator extends TimedReceiver {
-    private emulators: Record<string, Emulator>;
     constructor(
         private defaultTimeout: number,
-        ...emulators: Emulator[]
+        private senders: Record<string, MessageSender>
     ) {
         super();
-        this.emulators = Object.fromEntries(emulators.map(e => [e.name, e]));
     }
 
     async exec(messages: Message[], responseCount?: number, timeout?: number) {
         timeout = timeout || this.defaultTimeout
         this.start();
         for (let request of messages) {
-            const emulator = this.emulators[request.emulatorName];
-            if (emulator) emulator.send(request);
+            const sender = this.senders[request.emulatorName];
+            if (sender) sender.send(request);
         }
         // Wait until we have enough responses or timeout
         return await this.waitForResponses(responseCount || -1, timeout);

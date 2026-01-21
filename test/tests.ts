@@ -1,4 +1,5 @@
-import { Test, TestResult, Message } from "../src/model";
+import { Test, TestResult } from "../src/test";
+import { Message } from "../src/msg";
 
 export interface MessageTest extends Test<Message[]> {
     corrId?: string;
@@ -20,7 +21,7 @@ function test(this: MessageTest, messages: Message[]): MessageTestResult | null 
     } : {
         test: this,
         resultType: "Fail",
-        failure: "Expected response not received.",
+        description: "Expected response not received.",
     }
 }
 

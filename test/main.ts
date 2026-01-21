@@ -1,7 +1,8 @@
-import { Message } from "../src/model";
-import { Orchestrator } from "../src/orchestrator";
-import { LengthFramingTcpEmulator } from "../src/tcp-emulator";
-import { Tester } from "../src/tester";
+import { Message } from "../src/msg";
+import { Orchestrator } from "../src/msg-receiver";
+import { Scenario, runScenarios } from "../src/test";
+import {  } from "../src/test";
+//import { LengthFramingTcpEmulator } from "../src/tcp-emulator";
 
 class TestSim extends LengthFramingTcpEmulator {
     protected getMessageLength(buffer: Buffer): number {
@@ -32,7 +33,7 @@ class TestSim extends LengthFramingTcpEmulator {
     }
 }
 
-class TestSut extends TestSim {
+class TestSut  {
     // Whenever a message is received, convert the payload to upper case and send it out.
     protected unmarshal(content: Buffer): Message {
         const msg = super.unmarshal(content);
@@ -49,3 +50,8 @@ const em1 = new TestSim("UPPERCASER", 1410, sutUrl);
 
 const otr = new Orchestrator(3000, em1);
 const tester = new Tester(otr);
+
+const scenarios: Scenario<void>[] = [
+];
+
+const testResut = runScenarios(scenarios);

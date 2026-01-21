@@ -22,14 +22,11 @@ export function listen(server: net.Server, port: number): Promise<void> {
     });
 }
 
-export type Listener = (socket: net.Socket) => void;
-
-/**
- * Creates a net.Server, starts listening, and returns a Promise that resolves when ready.
- */
-export function startServer(port: number, listener: Listener): Promise<net.Server> {
+export function startServer(port: number, connectionHandler: (socket: net.Socket) => any): Promise<net.Server> {
     return new Promise((resolve, reject) => {
-        const server = net.createServer(listener);
+        const server = net.createServer((socket) => {
+            connectionHandler(socket);
+        });
         server.listen(port, () => resolve(server));
         server.on("error", reject);
     });

@@ -13,9 +13,9 @@ export interface TcpReceiver {
     receive(msg: Buffer): void
 }
 
-export type ReceiverFactory = (conn: TcpConnection) => void;
+export type SocketHandlerFactory = (conn: TcpConnection) => void;
 
-export function startServer(port: number, factory: ReceiverFactory) {
+export function startServer(port: number, factory: SocketHandlerFactory) {
     const server = createServer((socket: Socket) => factory(new TcpServerConnection(socket)));
     server.listen(port);
 }

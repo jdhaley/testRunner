@@ -1,57 +1,36 @@
 import { Message } from "../src/msg";
 import { Orchestrator } from "../src/msg-receiver";
+import { startServer, TcpClient, TcpConnection } from "../src/tcp";
 import { Scenario, runScenarios } from "../src/test";
-import {  } from "../src/test";
-//import { LengthFramingTcpEmulator } from "../src/tcp-emulator";
+import { ClientEmulator, Emulator } from "./emulator";
 
-class TestSim extends LengthFramingTcpEmulator {
-    protected getMessageLength(buffer: Buffer): number {
-        return buffer.readUInt32BE(0);
-    }
-    
-    protected getPayload(buffer: Buffer) {
-        return buffer.subarray(this.headerSize, this.getMessageLength(buffer));
-    }
+const sutHost = "127.0.0.1";
+const sutPort = 1410;
 
-    protected unmarshal(content: Buffer): Message {
-        const payload = this.getPayload(content).toString("utf8");
-        return {
-            emulatorName: this.name,
-            payload: {
-                content: payload
-            }
-        }
+export class Sut {
+    constructor(connection: TcpConnection) { 
+        this.emulator = new Emulator("SUT", connection, this);
+        connection.setReceiver(this.emulator);
     }
+    private emulator: Emulator;
 
-    protected marshal(message: Message): Buffer {
-        const content = message.payload?.content ?? "";
-        const payload = Buffer.from(content, "utf8");
-        const buf = Buffer.alloc(this.headerSize + payload.length);
-        buf.writeUInt32BE(this.headerSize + payload.length, 0);
-        payload.copy(buf, this.headerSize);
-        return buf;
+    receive(m: Message): void {
+        m.payload.content = "" + m.payload.content.toUpperCase();
+        this.send(m);
+    }
+    send(m: Message) {
+        this.emulator.send(m);
     }
 }
+startServer(sutPort, (conn: TcpConnection) => new Sut(conn));
 
-class TestSut  {
-    // Whenever a message is received, convert the payload to upper case and send it out.
-    protected unmarshal(content: Buffer): Message {
-        const msg = super.unmarshal(content);
-        msg.payload["content"] = ("" + msg.payload["content"]).toUpperCase();
-        this.send(msg);
-        return msg;
-    }
-}
-const sutUrl = {
-    host: "127.0.0.1",
-    port: 1410
-}
-const em1 = new TestSim("UPPERCASER", 1410, sutUrl);
+const otr = new Orchestrator(3000);
+new ClientEmulator("EM1", sutHost, sutPort, otr);
+new ClientEmulator("EM2", sutHost, sutPort, otr);
 
-const otr = new Orchestrator(3000, em1);
-const tester = new Tester(otr);
-
-const scenarios: Scenario<void>[] = [
-];
+const scenarios: Scenario[] = [
+]
 
 const testResut = runScenarios(scenarios);
+
+console.log(testResut);

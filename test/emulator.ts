@@ -1,7 +1,8 @@
-import { Message, MessageReceiver } from "./msg";
-import { TcpConnection, TcpReceiver } from "./tcp";
+import { Message, MessageReceiver, MessageSender } from "../src/msg";
+import { Orchestrator } from "../src/msg-receiver";
+import { TcpReceiver, TcpConnection, TcpClient } from "../src/tcp";
 
-export class Emulator implements TcpReceiver {
+export class Emulator implements TcpReceiver, MessageSender {
     constructor(
         private name: string,
         private connection: TcpConnection,
@@ -29,5 +30,12 @@ export class Emulator implements TcpReceiver {
             }
         }
         this.receiver.receive(msg);
+    }
+}
+
+export class ClientEmulator extends Emulator {
+    constructor(name: string, host: string, port: number, orch: Orchestrator) {
+        super(name, new TcpClient(host, port), orch);
+        orch.setSender(name, this);
     }
 }

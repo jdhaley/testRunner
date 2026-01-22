@@ -13,18 +13,26 @@ export interface TcpReceiver {
     receive(msg: Buffer): void
 }
 
-export function startServer(port: number, receiver: TcpReceiver) {
-    const server = createServer((socket: Socket) => createServerConnection(socket));
-    server.listen(port);
+export type ReceiverFactory = (conn: TcpConnection) => void;
 
-    function createServerConnection(socket: Socket) {
-        return new TcpServerConnection(socket, receiver)
-    }
+export function startServer(port: number, factory: ReceiverFactory) {
+    const server = createServer((socket: Socket) => factory(new TcpServerConnection(socket)));
+    server.listen(port);
 }
 
 export abstract class TcpConnection  {
     private buffer = Buffer.alloc(0);
-    constructor(private receiver?: TcpReceiver) {
+    private receiver?: TcpReceiver;
+
+    constructor() {
+    }
+
+    public setReceiver(receiver: TcpReceiver) {
+        this.receiver = receiver;
+    }
+
+    public send(data: Buffer): void {
+        this.getConnection().write(data);
     }
 
     protected start() {
@@ -32,12 +40,8 @@ export abstract class TcpConnection  {
         this.getConnection().on("close", () => this.onClose());
     }
 
-    public send(data: Buffer): void {
-        this.getConnection().write(data);
-    }
-
     protected onData(data: Buffer) {
-        if (!this.receiver) throw new Error("Connection is not a receiver.");
+        if (!this.receiver) throw new Error("Connection does not have a receiver.");
 
         this.buffer = Buffer.concat([this.buffer, data]);
         let msgLength = this.receiver.getMessageLength(this.buffer);
@@ -50,15 +54,17 @@ export abstract class TcpConnection  {
             msgLength = this.receiver.getMessageLength(this.buffer);
         }
     }
-    private onClose() {
+
+    protected onClose() {
     }
 
     protected abstract getConnection(): Socket;
 }
 
 export class TcpServerConnection extends TcpConnection {
-    constructor(private socket: Socket, receiver: TcpReceiver) {
-        super(receiver);
+    constructor(private socket: Socket) {
+        super();
+        this.start();
     }
 
     protected getConnection(): Socket {
@@ -72,14 +78,14 @@ export class TcpClient extends TcpConnection {
     constructor(
         private host: string,
         private port: number,
-        receiver?: TcpReceiver
     ) { 
-        super(receiver)
+        super();
     }
 
     protected getConnection(): Socket {
         if (!this.socket || this.socket.destroyed) {
             this.socket = createConnection({ host: this.host, port: this.port });
+            this.start();
         }
         return this.socket;
     }

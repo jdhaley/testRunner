@@ -20,14 +20,14 @@ export class TimedReceiver implements MessageReceiver {
         }
     }
 
-    async waitForResponses(responseCount: number, timeout: number) {
+    waitForResponses(responseCount: number, timeout: number) {
         if (this.responses) throw new Error("waiting on responses without a corresponding start()")
         this.responses = [];
 
         const responses = this.responses;
         const start = Date.now();
         while (responses.length < responseCount && (Date.now() - start) < timeout) {
-            await new Promise((resolve) => setTimeout(resolve, 50));
+            setTimeout(() => null, 50);
         }
         delete this.responses;
         return responses;
@@ -37,12 +37,16 @@ export class TimedReceiver implements MessageReceiver {
 export class Orchestrator extends TimedReceiver {
     constructor(
         private defaultTimeout: number,
-        private senders: Record<string, MessageSender>
     ) {
         super();
     }
+    private senders: Record<string, MessageSender> = {}
 
-    async exec(messages: Message[], responseCount?: number, timeout?: number) {
+    setSender(name: string, sender: MessageSender) {
+        this.senders[name] = sender;
+    }
+
+    exec(messages: Message[], responseCount?: number, timeout?: number) {
         timeout = timeout || this.defaultTimeout
         this.start();
         for (let request of messages) {
@@ -50,6 +54,6 @@ export class Orchestrator extends TimedReceiver {
             if (sender) sender.send(request);
         }
         // Wait until we have enough responses or timeout
-        return await this.waitForResponses(responseCount || -1, timeout);
+        return this.waitForResponses(responseCount || -1, timeout);
     }
 }

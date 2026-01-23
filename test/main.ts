@@ -1,8 +1,9 @@
 import { Message } from "../src/msg";
 import { Orchestrator } from "../src/msg-receiver";
-import { startServer, TcpClient, TcpConnection } from "../src/tcp";
-import { Scenario, runScenarios } from "../src/test";
+import { startServer, TcpConnection } from "../src/tcp";
+import { printTestReport } from "../src/test-report";
 import { ClientEmulator, Emulator } from "./emulator";
+import { defineSuite } from "./scenarios";
 
 const sutHost = "127.0.0.1";
 const sutPort = 1410;
@@ -24,13 +25,11 @@ export class Sut {
 }
 startServer(sutPort, (conn: TcpConnection) => new Sut(conn));
 
-const otr = new Orchestrator(3000);
-new ClientEmulator("EM1", sutHost, sutPort, otr);
-new ClientEmulator("EM2", sutHost, sutPort, otr);
+const orch = new Orchestrator(3000);
+new ClientEmulator("EM1", sutHost, sutPort, orch);
+new ClientEmulator("EM2", sutHost, sutPort, orch);
 
-const scenarios: Scenario[] = [
-]
+const suite = defineSuite(orch);
+const testResult = await suite.test();
 
-const testResut = runScenarios(scenarios);
-
-console.log(testResut);
+printTestReport(testResult);

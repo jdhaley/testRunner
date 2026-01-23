@@ -10,7 +10,7 @@ export class Emulator implements TcpReceiver, MessageSender {
     ) { }
 
     getMessageLength(buffer: Buffer): number {
-        return buffer.readUInt32BE(0);
+        return buffer.length >= 4 ? buffer.readUInt32BE(0) : -1;
     }
 
     send(msg: Message): void {
@@ -35,7 +35,9 @@ export class Emulator implements TcpReceiver, MessageSender {
 
 export class ClientEmulator extends Emulator {
     constructor(name: string, host: string, port: number, orch: Orchestrator) {
-        super(name, new TcpClient(host, port), orch);
+        const client = new TcpClient(host, port);
+        super(name, client, orch);
+        client.setReceiver(this);
         orch.setSender(name, this);
     }
 }

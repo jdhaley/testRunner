@@ -8,7 +8,7 @@ export interface TestDefinition {
 // export type TestFactory<T> = (definition: TestDefinition, testData: T) => Tst
 // export type Tst = () => TestResult;
 
-export interface Test<T = any> {
+export interface Test<T = void> {
     definition: TestDefinition;
     test(testData: T): Promise<TestResult>;
 }
@@ -22,9 +22,41 @@ export interface TestResult {
     childResults?: TestResult[];
 }
 
-export interface Scenario extends Test<void> {
-    steps: Test<void>[];
+export class Tests implements Test {
+    constructor(public definition: TestDefinition, ...tests: Test[]) { 
+        this.tests = tests;
+    }
+    private tests: Test[];
+
+    async test(): Promise<TestResult> {
+        const results: TestResult[] = [];
+        for (let test of this.tests) {
+            const result = await this.runTest(test);
+            if (result != NOT_APPLICABLE) results.push(result);
+            if (result.resultType === "Fail" && test.definition.onFailure === "stop") break;
+        }
+        return {
+            test: this,
+            resultType: getResultType(results),
+            childResults: results
+        }
+    }
+    protected async runTest(test: Test) {
+        let result: TestResult;
+        try {
+            result = await test.test();
+        } catch (error) {
+            result = {
+                test: test,
+                resultType: "Fail",
+                description: "" + error
+            }
+        }
+        return result;
+    }
 }
+export type TestSuite = Tests;
+export type Scenario = Tests;
 
 /**
  * Return this when a Test.test(t) is not applicable for the data.
@@ -35,38 +67,6 @@ export const NOT_APPLICABLE: TestResult = Object.freeze({
     resultType: "Warning",
     description: "Test Data did not match test prerequisite"
 });
-
-export async function runScenarios(scenarios: Scenario[]): Promise<TestResult[]> {
-    const results: TestResult[] = []
-    for (const scenario of scenarios) {
-        let result: TestResult;
-        try {
-            result = await runScenario(scenario);
-        } catch (error) {
-            result = {
-                test: scenario,
-                resultType: "Fail",
-                description: "" + error
-            }
-        }
-        results.push(result);
-    }
-    return results;
-}
-
-export async function runScenario(scenario: Scenario): Promise<TestResult> {
-    const results: TestResult[] = [];
-    for (let step of scenario.steps) {
-        const result = await step.test();
-        if (result != NOT_APPLICABLE) results.push(result);
-        if (result.resultType === "Fail" && step.definition.onFailure === "stop") break;
-    }
-    return {
-        test: scenario,
-        resultType: getResultType(results),
-        childResults: results
-    }
-}
 
 export function getResultType(results: TestResult[]) {
     let type: ResultType = "Pass";

@@ -1,15 +1,17 @@
 {
   "name": "testrunner",
   "version": "1.0.0",
-  "description": "A project with Express dependency.",
-  "main": "model.ts",
+  "description": "Test Framework",
+  "main": "test/main.ts",
+  "type": "module",
   "scripts": {
-    "start": "node model.ts"
+    "dev": "tsx test/main.ts"
   },
   "dependencies": {
     "express": "^4.18.2"
   },
   "devDependencies": {
-    "@types/express": "^5.0.6"
+    "@types/express": "^5.0.6",
+    "tsx": "^4.21.0"
   }
 }

@@ -36,7 +36,6 @@ export class Step implements Test<void> {
             test: this,
             resultType: getResultType(results),
             childResults: results,
-            timestamp: new Date(startTime),
             duration: Date.now() - startTime
         };
     }

@@ -17,7 +17,6 @@ export type ResultType = "Pass" | "Fail" | "Warning";
 
 export interface TestResult {
     resultType: ResultType;
-    timestamp?: Date;
     duration?: number;
     test?: Test<any>;
     description?: string;
@@ -42,7 +41,6 @@ export class Tests implements Test {
             test: this,
             resultType: getResultType(results),
             childResults: results,
-            timestamp: new Date(startTime),
             duration: Date.now() - startTime
         }
     }
@@ -56,7 +54,6 @@ export class Tests implements Test {
                 test: test,
                 resultType: "Fail",
                 description: "" + error,
-                timestamp: new Date(startTime),
                 duration: Date.now() - startTime
             }
         }

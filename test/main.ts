@@ -1,7 +1,7 @@
 import { Message } from "../src/msg";
 import { Orchestrator } from "../src/msg-receiver";
 import { startServer, TcpConnection } from "../src/tcp";
-import { printTestReport } from "../src/test-report";
+import { reportResult } from "../src/test-report";
 import { ClientEmulator, Emulator } from "./emulator";
 import { defineSuite } from "./scenarios";
 
@@ -32,4 +32,4 @@ new ClientEmulator("EM2", sutHost, sutPort, orch);
 const suite = defineSuite(orch);
 const testResult = await suite.test();
 
-printTestReport(testResult);
+reportResult(testResult);

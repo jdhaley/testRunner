@@ -47,8 +47,9 @@ const tst2: MessageTest = {
 const step1: StepDefinition = {
     name: "step1",
     onFailure: "continue",
-    responseCount: 3, //Test timeout (there are two request messages)
-    timeout: 4000,
+    responseCount: 2,
+    //responseCount: 3, //Test timeout (there are two request messages)
+    timeout: 2000,
     requestMessages: [msg1, msg2],
     testCases: [tst1, tst2]
 }

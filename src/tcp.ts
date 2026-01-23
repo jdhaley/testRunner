@@ -81,8 +81,8 @@ export class TcpServerConnection extends TcpConnection {
         this.start();
     }
 
-    public close() {
-        this.socket.destroy();
+    public close(force?: boolean) {
+        force ? this.socket.destroy() : this.socket.end();
         this.server.closeConnection(this);
     }
 
@@ -105,9 +105,9 @@ export class TcpServer {
     private server: Server;
     private connections = new Set<TcpServerConnection>();
 
-    public close() {
+    public close(force?: boolean) {
         this.server.close();
-        for (const conn of this.connections) conn.close();
+        for (const conn of this.connections) conn.close(force);
     }
 
     private createConnection(socket: Socket, factory: SocketHandlerFactory) {

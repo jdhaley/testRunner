@@ -1,6 +1,6 @@
 import { Message } from "../src/msg";
 import { Orchestrator } from "../src/msg-receiver";
-import { startServer, TcpConnection } from "../src/tcp";
+import { TcpConnection, TcpServer } from "../src/tcp";
 import { reportResult } from "../src/test-report";
 import { ClientEmulator, Emulator } from "./emulator";
 import { defineSuite } from "./scenarios";
@@ -23,13 +23,14 @@ export class Sut {
         this.emulator.send(m);
     }
 }
-startServer(sutPort, (conn: TcpConnection) => new Sut(conn));
 
 const orch = new Orchestrator(3000);
 new ClientEmulator("EM1", sutHost, sutPort, orch);
 new ClientEmulator("EM2", sutHost, sutPort, orch);
 
 const suite = defineSuite(orch);
-const testResult = await suite.test();
 
+const server = new TcpServer(sutPort, (conn: TcpConnection) => new Sut(conn));
+const testResult = await suite.test();
 reportResult(testResult);
+server.close();

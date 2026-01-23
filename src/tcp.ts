@@ -1,4 +1,4 @@
-import { createConnection, createServer, Socket } from "net";
+import { createConnection, createServer, Server, Socket } from "net";
 
 export interface TcpReceiver {
     /**
@@ -14,11 +14,6 @@ export interface TcpReceiver {
 }
 
 export type SocketHandlerFactory = (conn: TcpConnection) => void;
-
-export function startServer(port: number, factory: SocketHandlerFactory) {
-    const server = createServer((socket: Socket) => factory(new TcpServerConnection(socket)));
-    server.listen(port);
-}
 
 export abstract class TcpConnection  {
     private buffer = Buffer.alloc(0);
@@ -61,24 +56,13 @@ export abstract class TcpConnection  {
     protected abstract getConnection(): Socket;
 }
 
-export class TcpServerConnection extends TcpConnection {
-    constructor(private socket: Socket) {
-        super();
-        this.start();
-    }
-
-    protected getConnection(): Socket {
-        return this.socket;
-    }
-}
-
 export class TcpClient extends TcpConnection {
     private socket?: Socket;
 
     constructor(
         private host: string,
         private port: number,
-    ) { 
+    ) {
         super();
     }
 
@@ -88,5 +72,51 @@ export class TcpClient extends TcpConnection {
             this.start();
         }
         return this.socket;
+    }
+}
+
+export class TcpServerConnection extends TcpConnection {
+    constructor(private server: TcpServer, private socket: Socket) {
+        super();
+        this.start();
+    }
+
+    public close() {
+        this.socket.destroy();
+        this.server.closeConnection(this);
+    }
+
+    protected getConnection(): Socket {
+        return this.socket;
+    }
+
+    protected onClose(): void {
+        this.close();
+    }
+}
+
+export class TcpServer {
+    constructor(port: number, factory: SocketHandlerFactory) {
+        this.server = createServer(
+            (socket: Socket) => this.createConnection(socket, factory)
+        );
+        this.server.listen(port);
+    }
+    private server: Server;
+    private connections = new Set<TcpServerConnection>();
+
+    public close() {
+        this.server.close();
+        for (const conn of this.connections) conn.close();
+    }
+
+    private createConnection(socket: Socket, factory: SocketHandlerFactory) {
+        const conn = new TcpServerConnection(this, socket);
+        factory(conn);
+        this.connections.add(conn);
+    }
+
+    public closeConnection(conn: TcpServerConnection) {
+        this.connections.delete(conn);
     }
 }

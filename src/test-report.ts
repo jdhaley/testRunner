@@ -5,7 +5,7 @@ export function printTestReport(result: TestResult, indent: number = 0): void {
     const icon = getIcon(result.resultType);
     const name = result.test?.definition.name || "Unnamed Test";
 
-    console.log(`${prefix}${icon} ${name} - ${result.resultType}`);
+    console.log(`${prefix}${icon} ${name} - ${result.resultType} (${result.duration}ms)`);
 
     if (result.description) {
         console.log(`${prefix}  ${result.description}`);
@@ -13,6 +13,9 @@ export function printTestReport(result: TestResult, indent: number = 0): void {
 
     if (result.childResults) {
         result.childResults.forEach(child => printTestReport(child, indent + 1));
+    }
+    if (indent === 0) {
+        printSummary(result);
     }
 }
 
@@ -34,6 +37,8 @@ export function printSummary(result: TestResult): void {
     console.log(`Failed:   ${stats.failed}`);
     console.log(`Warnings: ${stats.warnings}`);
     console.log(`Status:   ${result.resultType}`);
+    console.log(`Start:    ${result.timestamp.toISOString()}`);
+    console.log(`Duration: ${result.duration}ms`);
     console.log("=".repeat(50));
 }
 

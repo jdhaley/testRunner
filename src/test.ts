@@ -1,8 +1,8 @@
 export interface TestDefinition {
-    name?: string;
+    name: string;
+    onFailure: "stop" | "continue";
     description?: string;
     sourceRef?: string;
-    onFailure: "stop" | "continue";
 }
 
 // export type TestFactory<T> = (definition: TestDefinition, testData: T) => Tst
@@ -17,6 +17,8 @@ export type ResultType = "Pass" | "Fail" | "Warning";
 
 export interface TestResult {
     resultType: ResultType;
+    timestamp?: Date;
+    duration?: number;
     test?: Test<any>;
     description?: string;
     childResults?: TestResult[];
@@ -29,6 +31,7 @@ export class Tests implements Test {
     private tests: Test[];
 
     async test(): Promise<TestResult> {
+        const startTime = Date.now();
         const results: TestResult[] = [];
         for (let test of this.tests) {
             const result = await this.runTest(test);
@@ -38,18 +41,23 @@ export class Tests implements Test {
         return {
             test: this,
             resultType: getResultType(results),
-            childResults: results
+            childResults: results,
+            timestamp: new Date(startTime),
+            duration: Date.now() - startTime
         }
     }
     protected async runTest(test: Test) {
         let result: TestResult;
+        const startTime = Date.now();
         try {
             result = await test.test();
         } catch (error) {
             result = {
                 test: test,
                 resultType: "Fail",
-                description: "" + error
+                description: "" + error,
+                timestamp: new Date(startTime),
+                duration: Date.now() - startTime
             }
         }
         return result;

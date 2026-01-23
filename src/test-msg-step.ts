@@ -15,14 +15,15 @@ export class Step implements Test<void> {
         private orchestrator: Orchestrator
     ) {}
     async test(): Promise<TestResult> {
+        const startTime = Date.now();
         const responses = await this.orchestrator.exec(
             this.definition.requestMessages,
             this.definition.responseCount,
             this.definition.timeout
         );
-        return this.verify(responses)
+        return this.verify(responses, startTime)
     }
-    async verify(responses: Message[]): Promise<TestResult> {
+    async verify(responses: Message[], startTime: number): Promise<TestResult> {
         const results: TestResult[] = []
         for (let test of this.definition.testCases) {
             const result = await test.test(responses);
@@ -34,7 +35,9 @@ export class Step implements Test<void> {
         return {
             test: this,
             resultType: getResultType(results),
-            childResults: results
+            childResults: results,
+            timestamp: new Date(startTime),
+            duration: Date.now() - startTime
         };
     }
 }

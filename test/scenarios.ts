@@ -12,11 +12,12 @@ const msg2: Message = {
     emulatorName: "EM2",
     payload: { content: "The quick brown fox" }
 }
-const simpleDef: TestDefinition = {
-    onFailure: "stop"
-}
+
 const tst1: MessageTest = {
-    definition: simpleDef,
+    definition: {
+        name: "tst1",
+        onFailure: "stop"
+    },
     request: msg1,
     expectedResponse: {
         emulatorName: "EM1",
@@ -27,8 +28,13 @@ const tst1: MessageTest = {
     }
 }
 const tst2: MessageTest = {
-    definition: simpleDef,
-    request: msg1,
+    definition: {
+        name: "tst2",
+        onFailure: "stop"
+    },
+    //TODO originally it was msg1 but there was no error but correlation
+    //isn't working.
+    request: msg2,
     expectedResponse: {
         emulatorName: "EM2",
         payload: { content: "THE QUICK BROWN FOX" }
@@ -41,7 +47,7 @@ const tst2: MessageTest = {
 const step1: StepDefinition = {
     name: "step1",
     onFailure: "continue",
-    responseCount: 2,
+    responseCount: 3, //Test timeout (there are two request messages)
     timeout: 4000,
     requestMessages: [msg1, msg2],
     testCases: [tst1, tst2]
@@ -49,7 +55,10 @@ const step1: StepDefinition = {
 
 export function defineSuite(orch: Orchestrator) {
     const s1 = new Step(step1, orch);
-    const scen1 = new Tests({ onFailure: "continue" }, s1);
+    const scen1 = new Tests({
+        name: "Scenario 1",
+        onFailure: "continue"
+    }, s1);
     return new Tests({
         name: "Scenarios",
         onFailure: "stop"

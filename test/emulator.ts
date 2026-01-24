@@ -27,7 +27,7 @@ export class Emulator implements TcpReceiver, MessageSender {
         const totalLength = buffer.readUInt32BE(0);
         const raw = buffer.subarray(4, totalLength);
         const msg: Message = {
-            emulatorName: this.name,
+            channel: this.name,
             payload: {
                 content: raw.toString("utf8")
             }

@@ -1,5 +1,5 @@
 export interface Message {
-    emulatorName: string;
+    channel?: string;
     corrId?: string;
     metadata?: Record<string, any>;
     payload: Record<string, any>;

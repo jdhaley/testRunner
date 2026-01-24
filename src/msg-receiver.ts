@@ -49,7 +49,7 @@ export class Orchestrator extends TimedReceiver {
         timeout = timeout || this.defaultTimeout
         this.start();
         for (let request of messages) {
-            const sender = this.senders[request.emulatorName];
+            const sender = this.senders[request.channel];
             if (sender) sender.send(request);
         }
         // Wait until we have enough responses or timeout

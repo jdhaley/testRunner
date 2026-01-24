@@ -5,11 +5,11 @@ import { Step, StepDefinition } from "../src/test-msg-step";
 import { MessageTest, testForExpected } from "./tests";
 
 const msg1: Message = {
-    emulatorName: "EM1",
+    channel: "EM1",
     payload: { content: "Hello world!" }
 }
 const msg2: Message = {
-    emulatorName: "EM2",
+    channel: "EM2",
     payload: { content: "The quick brown fox" }
 }
 
@@ -20,7 +20,7 @@ const tst1: MessageTest = {
     },
     request: msg1,
     expectedResponse: {
-        emulatorName: "EM1",
+        channel: "EM1",
         payload: { content: "HELLO WORLD!" }
     },
     test(data: Message[]) {
@@ -36,7 +36,7 @@ const tst2: MessageTest = {
     //isn't working.
     request: msg2,
     expectedResponse: {
-        emulatorName: "EM2",
+        channel: "EM2",
         payload: { content: "THE QUICK BROWN FOX" }
     },
     test(data: Message[]) {

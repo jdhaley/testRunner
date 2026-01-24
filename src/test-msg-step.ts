@@ -6,14 +6,19 @@ export interface StepDefinition extends TestDefinition {
     responseCount: number;
     timeout?: number;
     requestMessages: Message[];
-    testCases: Test<Message[]>[];
 }
 
 export class Step implements Test<void> {
     constructor(
+        private orchestrator: Orchestrator,
         public definition: StepDefinition,
-        private orchestrator: Orchestrator
-    ) {}
+        ...tests: Test<Message[]>[]
+
+    ) {
+        this.tests = tests;
+    }
+    private tests: Test<Message[]>[];
+
     async test(): Promise<TestResult> {
         const startTime = Date.now();
         const responses = await this.orchestrator.exec(
@@ -25,7 +30,7 @@ export class Step implements Test<void> {
     }
     async verify(responses: Message[], startTime: number): Promise<TestResult> {
         const results: TestResult[] = []
-        for (let test of this.definition.testCases) {
+        for (let test of this.tests) {
             const result = await test.test(responses);
             if (result !== NOT_APPLICABLE) {
                 results.push(result);

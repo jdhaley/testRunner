@@ -33,7 +33,7 @@ export class Tests implements Test {
         const startTime = Date.now();
         const results: TestResult[] = [];
         for (let test of this.tests) {
-            const result = await this.runTest(test);
+            const result = await runTest(test);
             if (result != NOT_APPLICABLE) results.push(result);
             if (result.resultType === "Fail" && test.definition.onFailure === "stop") break;
         }
@@ -44,24 +44,25 @@ export class Tests implements Test {
             duration: Date.now() - startTime
         }
     }
-    protected async runTest(test: Test) {
-        let result: TestResult;
-        const startTime = Date.now();
-        try {
-            result = await test.test();
-        } catch (error) {
-            result = {
-                test: test,
-                resultType: "Fail",
-                description: "" + error,
-                duration: Date.now() - startTime
-            }
-        }
-        return result;
-    }
 }
 export type TestSuite = Tests;
 export type Scenario = Tests;
+
+export async function runTest(test: Test) {
+    let result: TestResult;
+    const startTime = Date.now();
+    try {
+        result = await test.test();
+    } catch (error) {
+        result = {
+            test: test,
+            resultType: "Fail",
+            description: "" + error,
+            duration: Date.now() - startTime
+        }
+    }
+    return result;
+}
 
 /**
  * Return this when a Test.test(t) is not applicable for the data.

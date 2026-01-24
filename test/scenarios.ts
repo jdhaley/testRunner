@@ -51,11 +51,10 @@ const step1: StepDefinition = {
     //responseCount: 3, //Test timeout (there are two request messages)
     timeout: 2000,
     requestMessages: [msg1, msg2],
-    testCases: [tst1, tst2]
 }
 
 export function defineSuite(orch: Orchestrator) {
-    const s1 = new Step(step1, orch);
+    const s1 = new Step(orch, step1, tst1, tst2);
     const scen1 = new Tests({
         name: "Scenario 1",
         onFailure: "continue"

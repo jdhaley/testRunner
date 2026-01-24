@@ -43,7 +43,6 @@ export function getResponseByCorrelation(expectedMessage: Message, messages: Mes
 }
 
 export function getResponseByValue(expectedMessage: Message, messages: Message[]): Message | null {
-    let expected = expectedMessage.payload;
     for (let message of messages) {
         if (isExpected(expectedMessage.payload, message.payload)) return message;
     }

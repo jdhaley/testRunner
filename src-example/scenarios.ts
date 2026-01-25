@@ -1,8 +1,6 @@
-import { Message } from "../src/msg";
-import { Orchestrator } from "../src/msg-receiver";
-import { Scenario, TestDefinition, TestResult, Tests } from "../src/test";
-import { Step, StepDefinition } from "../src/test-msg-step";
-import { MessageTest, testForExpected } from "./tests";
+import { Message, Orchestrator } from "../src/msg";
+import { Tests } from "../src/test";
+import { MessageTest, Step, StepDefinition, testForExpected } from "../src/test-msg";
 
 const tst1: MessageTest = {
     definition: {

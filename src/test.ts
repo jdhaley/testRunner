@@ -13,7 +13,12 @@ export interface Test<T = void> {
     test(testData: T): Promise<TestResult>;
 }
 
-export type ResultType = "Pass" | "Fail" | "Warning";
+/*
+    Error: Test did not run due to errors in test data, or 
+           runtime error trapped while executing test
+    Fatal: Error detected within the testing framework.
+*/
+export type ResultType = "Pass" | "Warning" | "Fail" | "Error" | "Fatal"
 
 export interface TestResult {
     resultType: ResultType;
@@ -45,8 +50,6 @@ export class Tests implements Test {
         }
     }
 }
-export type TestSuite = Tests;
-export type Scenario = Tests;
 
 export async function runTest(test: Test) {
     let result: TestResult;
@@ -59,7 +62,7 @@ export async function runTest(test: Test) {
         }
         result = {
             test: test,
-            resultType: "Fail",
+            resultType: "Error",
             description: "" + error,
             duration: Date.now() - startTime
         }
@@ -81,8 +84,10 @@ export function getResultType(results: TestResult[]) {
     let type: ResultType = "Pass";
     for (let result of results) {
         switch (result.resultType) {
+            case "Fatal":
+            case "Error":
             case "Fail":
-                return "Fail";
+                return result.resultType;
             case "Warning":
                 type = "Warning";
                 break;

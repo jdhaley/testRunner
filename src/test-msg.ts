@@ -1,14 +1,57 @@
-import { ResultType, Test, TestResult } from "../src/test";
-import { Message } from "../src/msg";
+import { Message, Orchestrator } from "./msg";
+import { getResultType, Test, TestDefinition, TestResult, NOT_APPLICABLE, ResultType } from "./test";
 
 export interface MessageTest extends Test<Message[]> {
-    corrId?: string;
-    request?: Message;
-    expectedResponse?: Message;
+    request: Message;
+    expectedResponse: Message;
 }
 
 export interface MessageTestResult extends TestResult {
     response?: Message;
+}
+
+export interface StepDefinition extends TestDefinition {
+    responseCount: number;
+    timeout?: number;
+    requestMessages: Message[];
+}
+
+export class Step implements Test<void> {
+    constructor(
+        private orchestrator: Orchestrator,
+        public definition: StepDefinition,
+        ...tests: Test<Message[]>[]
+
+    ) {
+        this.tests = tests;
+    }
+    private tests: Test<Message[]>[];
+
+    async test(): Promise<TestResult> {
+        const startTime = Date.now();
+        const responses = await this.orchestrator.exec(
+            this.definition.requestMessages,
+            this.definition.responseCount,
+            this.definition.timeout
+        );
+        return this.verify(responses, startTime)
+    }
+    async verify(responses: Message[], startTime: number): Promise<TestResult> {
+        const results: TestResult[] = []
+        for (let test of this.tests) {
+            const result = await test.test(responses);
+            if (result !== NOT_APPLICABLE) {
+                results.push(result);
+                if (result.resultType === "Fail") break;
+            }
+        }
+        return {
+            test: this,
+            resultType: getResultType(results),
+            childResults: results,
+            duration: Date.now() - startTime
+        };
+    }
 }
 
 export const TEST_CASE_ERROR: TestResult = Object.freeze({
@@ -45,25 +88,14 @@ export function getResponseByCorrelation(expectedMessage: Message, messages: Mes
 export function getResponseByValue(expectedMessage: Message, messages: Message[]): Message | null {
     for (let message of messages) {
         if (isExpected(expectedMessage.header, message.header)
-        && isExpected(expectedMessage.body, message.body)) return message;
+            && isExpected(expectedMessage.body, message.body)) return message;
     }
     return null;
-} 
+}
 
 export function isExpected(expected: Record<string, any>, actual: Record<string, any>) {
     for (let prop in expected) {
         if (expected[prop] !== actual[prop]) return false;
     }
     return true;
-}
-
-
-/* Creates a result & wraps it in a promise */
-export function result(test: Test, rt: ResultType, desc?: string, ...results: TestResult[]): Promise<TestResult> {
-    return Promise.resolve({
-        resultType: rt,
-        test: test,
-        ...(desc && { description: desc }),
-        ...(results.length > 0 && { childResults: results })
-    });
 }

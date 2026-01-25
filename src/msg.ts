@@ -20,3 +20,70 @@ export interface MessageSender {
 export interface MessageReceiver {
     receive(m: Message): void;
 }
+
+/**
+ * A Receiver that waits until a specific number of messages has been received 
+ * or a timeout threshold has been reached.
+ */
+export class TimedReceiver implements MessageReceiver {
+    private responses?: Message[];
+
+    start() {
+        this.responses = [];
+    }
+
+    receive(response: Message): void {
+        if (this.responses) {
+            this.responses.push(response);
+        } else {
+            console.error("Received message out of step: ", response);
+        }
+    }
+
+    async waitForResponses(responseCount: number, timeout: number) {
+        if (!this.responses) throw new Error("waiting on responses without a corresponding start()")
+
+        const responses = this.responses;
+        const start = Date.now();
+        while (responses.length < responseCount && (Date.now() - start) < timeout) {
+            await new Promise(resolve => setTimeout(resolve, 50));
+        }
+        delete this.responses;
+        return responses;
+    }
+}
+
+export class Orchestrator extends TimedReceiver {
+    constructor(
+        private defaultTimeout: number,
+    ) {
+        super();
+    }
+    private senders: Record<string, MessageSender> = {}
+
+    setSender(name: string, sender: MessageSender) {
+        this.senders[name] = sender;
+    }
+
+    async exec(messages: Message[], responseCount?: number, timeout?: number) {
+        timeout = timeout || this.defaultTimeout
+        this.start();
+        for (let request of messages) this.sendRequest(request);
+        // Wait until we have enough responses or timeout
+        return await this.waitForResponses(responseCount || -1, timeout);
+    }
+
+    private sendRequest(request: Message) {
+        const channel = request?.header?.channel;
+        if (!channel) {
+            console.error("No channel defined for request: ", request);
+            return;
+        }
+        const sender = this.senders[channel];
+        if (!sender) {
+            console.error("No sender defined for channel: ", channel);
+            return;
+        }
+        if (sender) sender.send(request);
+    }
+}

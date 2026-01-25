@@ -86,6 +86,10 @@ export class TcpServerConnection extends TcpConnection {
         this.server.closeConnection(this);
     }
 
+    protected getServer(): TcpServer {
+        return this.server;
+    }
+
     protected getConnection(): Socket {
         return this.socket;
     }

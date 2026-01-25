@@ -1,5 +1,4 @@
-import { Message, MessageReceiver, MessageSender } from "../src/msg";
-import { Orchestrator } from "../src/msg-receiver";
+import { Message, MessageReceiver, MessageSender, Orchestrator } from "../src/msg";
 import { TcpReceiver, TcpConnection, TcpClient } from "../src/tcp";
 
 export class Emulator implements TcpReceiver, MessageSender {
@@ -44,5 +43,22 @@ export class ClientEmulator extends Emulator {
         super(name, client, orch);
         client.setReceiver(this);
         orch.setSender(name, this);
+    }
+}
+
+// Note: A new Sut is created for each server connection. This isn't really an issue.
+export class SutConnection {
+    constructor(connection: TcpConnection) { 
+        this.emulator = new Emulator("SUT", connection, this);
+        connection.setReceiver(this.emulator);
+    }
+    private emulator: Emulator;
+
+    receive(m: Message): void {
+        m.body.content = "" + m.body.content.toUpperCase();
+        this.send(m);
+    }
+    send(m: Message) {
+        this.emulator.send(m);
     }
 }

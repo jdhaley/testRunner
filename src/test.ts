@@ -54,6 +54,9 @@ export async function runTest(test: Test) {
     try {
         result = await test.test();
     } catch (error) {
+        if (error instanceof Error) {
+            error = error.stack || "" + error;
+        }
         result = {
             test: test,
             resultType: "Fail",

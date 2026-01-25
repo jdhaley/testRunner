@@ -22,7 +22,7 @@ function reportTest(result: TestResult, indent: number = 0): void {
     console.log(`${prefix}${icon} ${name} - ${result.resultType} ${duration}`);
 
     if (result.description) {
-        console.log(`${prefix}  ${result.description}`);
+        console.log(`${prefix}  > ${result.description}`);
     }
 
     if (result.childResults) {

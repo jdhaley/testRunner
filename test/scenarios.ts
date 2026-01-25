@@ -4,24 +4,18 @@ import { Scenario, TestDefinition, TestResult, Tests } from "../src/test";
 import { Step, StepDefinition } from "../src/test-msg-step";
 import { MessageTest, testForExpected } from "./tests";
 
-const msg1: Message = {
-    channel: "EM1",
-    payload: { content: "Hello world!" }
-}
-const msg2: Message = {
-    channel: "EM2",
-    payload: { content: "The quick brown fox" }
-}
-
 const tst1: MessageTest = {
     definition: {
         name: "tst1",
         onFailure: "stop"
     },
-    request: msg1,
+    request: {
+        header: { channel: "EM1" },
+        body: { content: "Hello world!" }
+    },
     expectedResponse: {
-        channel: "EM1",
-        payload: { content: "HELLO WORLD!" }
+        header: { channel: "EM1" },
+        body: { content: "HELLO WORLD!" }
     },
     test(data: Message[]) {
         return Promise.resolve(testForExpected(this, data));
@@ -32,12 +26,14 @@ const tst2: MessageTest = {
         name: "tst2",
         onFailure: "stop"
     },
-    //TODO originally it was msg1 but there was no error but correlation
-    //isn't working.
-    request: msg2,
+    request: {
+        header: { channel: "EM2" },
+        body: { content: "The quick brown fox" }
+    },
     expectedResponse: {
-        channel: "EM2",
-        payload: { content: "THE QUICK BROWN FOX" }
+        header: { channel: "EM2" },
+        // Note the forced failure
+        body: { content: "THE QUICK BROWN FOX!" }
     },
     test(data: Message[]) {
         return Promise.resolve(testForExpected(this, data));
@@ -47,10 +43,10 @@ const tst2: MessageTest = {
 const step1: StepDefinition = {
     name: "step1",
     onFailure: "continue",
+    requestMessages: [tst1.request, tst2.request],
     responseCount: 2,
     //responseCount: 3, //Test timeout (there are two request messages)
     timeout: 2000,
-    requestMessages: [msg1, msg2],
 }
 
 export function defineSuite(orch: Orchestrator) {

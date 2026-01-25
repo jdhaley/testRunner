@@ -48,11 +48,22 @@ export class Orchestrator extends TimedReceiver {
     async exec(messages: Message[], responseCount?: number, timeout?: number) {
         timeout = timeout || this.defaultTimeout
         this.start();
-        for (let request of messages) {
-            const sender = this.senders[request.channel];
-            if (sender) sender.send(request);
-        }
+        for (let request of messages) this.sendRequest(request);
         // Wait until we have enough responses or timeout
         return await this.waitForResponses(responseCount || -1, timeout);
+    }
+
+    private sendRequest(request: Message) {
+        const channel = request?.header?.channel;
+        if (!channel) {
+            console.error("No channel defined for request: ", request);
+            return;
+        }
+        const sender = this.senders[channel];
+        if (!sender) {
+            console.error("No sender defined for channel: ", channel);
+            return;
+        }
+        if (sender) sender.send(request);
     }
 }

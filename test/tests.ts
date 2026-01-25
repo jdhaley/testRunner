@@ -1,4 +1,4 @@
-import { NOT_APPLICABLE, ResultType, Test, TestResult } from "../src/test";
+import { ResultType, Test, TestResult } from "../src/test";
 import { Message } from "../src/msg";
 
 export interface MessageTest extends Test<Message[]> {
@@ -37,14 +37,15 @@ export function testForExpected(testCase: MessageTest, messages: Message[]): Mes
 
 export function getResponseByCorrelation(expectedMessage: Message, messages: Message[]): Message | null {
     for (let message of messages) {
-        if (expectedMessage.corrId === message.corrId) return message;
+        if (expectedMessage.header.corrId === message.header.corrId) return message;
     }
     return null;
 }
 
 export function getResponseByValue(expectedMessage: Message, messages: Message[]): Message | null {
     for (let message of messages) {
-        if (isExpected(expectedMessage.payload, message.payload)) return message;
+        if (isExpected(expectedMessage.header, message.header)
+        && isExpected(expectedMessage.body, message.body)) return message;
     }
     return null;
 } 

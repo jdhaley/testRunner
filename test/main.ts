@@ -16,7 +16,7 @@ export class Sut {
     private emulator: Emulator;
 
     receive(m: Message): void {
-        m.payload.content = "" + m.payload.content.toUpperCase();
+        m.body.content = "" + m.body.content.toUpperCase();
         this.send(m);
     }
     send(m: Message) {

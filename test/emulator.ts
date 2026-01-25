@@ -16,7 +16,7 @@ export class Emulator implements TcpReceiver, MessageSender {
     }
 
     send(msg: Message): void {
-        const payload = Buffer.from(msg.payload?.content || "", "utf8");
+        const payload = Buffer.from(msg.body?.content || "", "utf8");
         const raw = Buffer.alloc(4 + payload.length);
         raw.writeUInt32BE(4 + payload.length, 0);  // TOTAL length
         payload.copy(raw, 4);
@@ -27,8 +27,10 @@ export class Emulator implements TcpReceiver, MessageSender {
         const totalLength = buffer.readUInt32BE(0);
         const raw = buffer.subarray(4, totalLength);
         const msg: Message = {
-            channel: this.name,
-            payload: {
+            header: {
+                channel: this.name
+            },
+            body: {
                 content: raw.toString("utf8")
             }
         }

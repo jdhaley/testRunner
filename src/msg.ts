@@ -1,8 +1,16 @@
-export interface Message {
+export interface Header {
     channel?: string;
     corrId?: string;
-    metadata?: Record<string, any>;
-    payload: Record<string, any>;
+    [key: string]: any;
+}
+
+export interface Body {
+    [key: string]: any;
+}
+
+export interface Message<T = Body> {
+    header: Header;
+    body: Body;
 }
 
 export interface MessageSender {

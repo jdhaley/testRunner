@@ -1,0 +1,1 @@
+* add Error/Fatal results (Fatal is for the testrunner fw issues).

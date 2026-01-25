@@ -1,4 +1,4 @@
-# Architecture & Design Document
+# Message-Oriented Testing Framework
 
 ## Overview
 This project is a TypeScript-based framework for testing and emulating TCP message-based systems. It provides abstractions for message handling, orchestrated test execution, and emulation of TCP endpoints, enabling robust integration and scenario testing without external dependencies.

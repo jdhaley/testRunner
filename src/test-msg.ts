@@ -1,4 +1,5 @@
-import { Message, Orchestrator } from "./msg";
+import { Orchestrator } from "./codec";
+import { Message } from "./msg";
 import { getResultType, Test, TestDefinition, TestResult, NOT_APPLICABLE, ResultType } from "./test";
 
 export interface MessageTest extends Test<Message[]> {
@@ -18,7 +19,7 @@ export interface StepDefinition extends TestDefinition {
 
 export class Step implements Test<void> {
     constructor(
-        private orchestrator: Orchestrator,
+        private orchestrator: Orchestrator<Message>,
         public definition: StepDefinition,
         ...tests: Test<Message[]>[]
 

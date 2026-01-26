@@ -1,0 +1,2 @@
+See about defining an Error class to distinguish either about
+Error or Fatal response type.

@@ -1,4 +1,5 @@
-import { Message, Orchestrator } from "../src/msg";
+import { Orchestrator } from "../src/codec";
+import { Message } from "../src/msg";
 import { Tests } from "../src/test";
 import { MessageTest, Step, StepDefinition, testForExpected } from "../src/test-msg";
 
@@ -47,7 +48,7 @@ const step1: StepDefinition = {
     timeout: 2000,
 }
 
-export function defineSuite(orch: Orchestrator) {
+export function defineSuite(orch: Orchestrator<Message>) {
     const s1 = new Step(orch, step1, tst1, tst2);
     const scen1 = new Tests({
         name: "Scenario 1",

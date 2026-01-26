@@ -1,74 +1,60 @@
-import { Codec, Receiver, Sender } from "./codec";
-
-export interface Header {
-    channel?: string;
-    corrId?: string;
-    [key: string]: any;
+export interface Sender<T> {
+    send(message: T): void;
 }
 
-export interface Body {
-    [key: string]: any;
+export interface Receiver<T> {
+    receive(message: T): void;
 }
 
-export interface Message<T = Body> {
-    header: Header;
-    body: T;
+/**
+ * A Receiver that waits until a specific number of messages has been received 
+ * or a timeout threshold has been reached.
+ */
+export class TimedReceiver<T> implements Receiver<T> {
+    private responses?: T[];
+
+    start() {
+        this.responses = [];
+    }
+
+    receive(response: T): void {
+        if (this.responses) {
+            this.responses.push(response);
+        } else {
+            console.error("Received message out of step: ", response);
+        }
+    }
+
+    async waitForResponses(responseCount: number, timeout: number) {
+        if (!this.responses) throw new Error("waiting on responses without a corresponding start()")
+
+        const responses = this.responses;
+        const start = Date.now();
+        while (responses.length < responseCount && (Date.now() - start) < timeout) {
+            await new Promise(resolve => setTimeout(resolve, 50));
+        }
+        delete this.responses;
+        return responses;
+    }
 }
 
-export class MessageCodec implements Codec<Message> {
+export class Orchestrator<T> extends TimedReceiver<T> {
     constructor(
-        private name: string,
-        private sender: Sender<Buffer>,
-        private receiver: Receiver<Message>
-    ) { }
+        private sender: Sender<T>,
+        private defaultTimeout: number
 
-    getMessageLength(buffer: Buffer): number {
-        if (buffer.length < 4) return -1;
-        const totalLength = buffer.readUInt32BE(0);
-        return buffer.length >= totalLength ? totalLength : -1;
+    ) {
+        super();
     }
 
-    receive(buffer: Buffer): void {
-        const totalLength = buffer.readUInt32BE(0);
-        const raw = buffer.subarray(4, totalLength);
-        const msg: Message = {
-            header: {
-                channel: this.name
-            },
-            body: {
-                content: raw.toString("utf8")
-            }
+    async exec(messages: T[], responseCount?: number, timeout?: number) {
+        timeout = timeout || this.defaultTimeout
+        this.start();
+        for (let request of messages) {
+            this.sender.send(request);
         }
-        this.receiver.receive(msg);
-    }
-
-    send(msg: Message): void {
-        const payload = Buffer.from(msg.body?.content || "", "utf8");
-        const raw = Buffer.alloc(4 + payload.length);
-        raw.writeUInt32BE(4 + payload.length, 0);  // TOTAL length
-        payload.copy(raw, 4);
-        this.sender.send(raw);
+        // Wait until we have enough responses or timeout
+        return await this.waitForResponses(responseCount || -1, timeout);
     }
 }
 
-export class Senders implements Sender<Message> {
-    private senders: Record<string, Sender<Message>> = {}
-
-    public addSender(name: string, sender: Sender<Message>) {
-        this.senders[name] = sender;
-    }
-
-    public send(message: Message) {
-        const channel = message?.header?.channel;
-        if (!channel) {
-            console.error("No channel defined for message: ", message);
-            return;
-        }
-        const sender = this.senders[channel];
-        if (!sender) {
-            console.error("No sender defined for channel: ", channel);
-            return;
-        }
-        if (sender) sender.send(message);
-    }
-}

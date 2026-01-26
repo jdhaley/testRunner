@@ -1,5 +1,5 @@
-import { Orchestrator } from "./codec";
-import { Message } from "./msg";
+import { Orchestrator } from "./msg";
+import { Message } from "./msg-base";
 import { getResultType, Test, TestDefinition, TestResult, NOT_APPLICABLE, ResultType } from "./test";
 
 export interface MessageTest extends Test<Message[]> {

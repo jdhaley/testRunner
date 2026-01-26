@@ -1,5 +1,5 @@
-import { Receiver } from "../src/codec";
-import { Message, MessageCodec } from "../src/msg";
+import { Receiver } from "../src/msg";
+import { Message, MessageCodec } from "../src/msg-base";
 import { TcpConnection, TcpClient } from "../src/tcp";
 
 export class ClientEmulator extends MessageCodec {

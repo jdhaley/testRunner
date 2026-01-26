@@ -1,5 +1,5 @@
-import { Orchestrator } from "../src/codec";
-import { Message } from "../src/msg";
+import { Orchestrator } from "../src/msg";
+import { Message } from "../src/msg-base";
 import { Tests } from "../src/test";
 import { MessageTest, Step, StepDefinition, testForExpected } from "../src/test-msg";
 

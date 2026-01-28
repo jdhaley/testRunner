@@ -1,6 +1,8 @@
 export interface TestDefinition {
     name: string;
-    onFailure: "stop" | "continue";
+    type?: string;
+    /** stop is the behaviour when not specified. */
+    onFailure?: "stop" | "continue";
     description?: string;
     sourceRef?: string;
 }
@@ -9,6 +11,8 @@ export interface Test<T = void> {
     definition: TestDefinition;
     test(testData: T): Promise<TestResult>;
 }
+
+export type TestFactory = (def: TestDefinition) => Test<any>
 
 /*
     Error: Test did not run due to errors in test data, or 
@@ -37,7 +41,7 @@ export class Tests implements Test {
         for (let test of this.tests) {
             const result = await runTest(test);
             if (result != NOT_APPLICABLE) results.push(result);
-            if (result.resultType === "Fail" && test.definition.onFailure === "stop") break;
+            if (result.resultType === "Fail" && test.definition.onFailure !== "continue") break;
         }
         return {
             test: this,

@@ -36,6 +36,7 @@ function getIcon(resultType: ResultType): string {
         case "Fail": return "✗";
         case "Warning": return "⚠";
     }
+    return "";
 }
 
 function collectStats(result: TestResult, stats = { total: 0, passed: 0, failed: 0, warnings: 0 }) {

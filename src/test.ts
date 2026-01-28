@@ -5,9 +5,6 @@ export interface TestDefinition {
     sourceRef?: string;
 }
 
-// export type TestFactory<T> = (definition: TestDefinition, testData: T) => Tst
-// export type Tst = () => TestResult;
-
 export interface Test<T = void> {
     definition: TestDefinition;
     test(testData: T): Promise<TestResult>;

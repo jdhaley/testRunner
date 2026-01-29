@@ -58,38 +58,22 @@ export interface AssertionTest {
   data?: any;
 }
 
-// Define the JSON Schema for AssertionTest
-const assertionTestSchema: Schema<AssertionTest> = {
-  type: "object",
-  properties: {
-    type: { type: "string", const: "assert" },
-    name: { type: "string" },
-    onFailure: { type: "string", enum: ["stop", "continue"] },
-    assertion: { type: "string" },
-    description: { type: "string", nullable: true },
-    sourceRef: { type: "string", nullable: true },
-    data: { type: "object", nullable: true },
-  },
-  required: ["type", "name", "onFailure", "assertion"],
-  additionalProperties: false
-};
+// // Example data to validate
+// const example: AssertionTest = {
+//   type: "assert",
+//   name: "test1",
+//   onFailure: "stop",
+//   assertion: "data > 3",
+//   data: 5
+// };
 
-// Example data to validate
-const example: AssertionTest = {
-  type: "assert",
-  name: "test1",
-  onFailure: "stop",
-  assertion: "data > 3",
-  data: 5
-};
+// export function validateTypes() {
+//     const ajv = new Ajv();
+//     const validate = ajv.compile(assertionTestSchema);
 
-export function validateTypes() {
-    const ajv = new Ajv();
-    const validate = ajv.compile(assertionTestSchema);
-
-    if (validate(example)) {
-        console.log("Valid AssertionTest!");
-    } else {
-        console.error("Validation errors:", validate.errors);
-    }
-}
+//     if (validate(example)) {
+//         console.log("Valid AssertionTest!");
+//     } else {
+//         console.error("Validation errors:", validate.errors);
+//     }
+// }

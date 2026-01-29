@@ -12,8 +12,6 @@ export interface Test<T = void> {
     test(testData: T): Promise<TestResult>;
 }
 
-export type TestFactory = (def: TestDefinition) => Test<any>
-
 /*
     Error: Test did not run due to errors in test data, or 
            runtime error trapped while executing test
@@ -69,6 +67,15 @@ export async function runTest(test: Test) {
         }
     }
     return result;
+}
+
+class TestError extends Error {
+    constructor(public test: TestDefinition, message: string) {
+        super(message)
+    }
+}
+export function throwTestError(test: TestDefinition, error: string) {
+    throw new TestError(test, `Error in test "${test.name}": ${error}`);
 }
 
 /**

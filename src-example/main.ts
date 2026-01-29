@@ -1,10 +1,12 @@
 import { Orchestrator } from "../src/msg";
 import { Message, Senders } from "../src/msg-base";
 import { TcpConnection, TcpServer } from "../src/tcp";
+import { demoExpectationFramework } from "../src/test-expectation";
 import { reportResult } from "../src/test-report";
 import { ClientEmulator, SutConnection } from "./emulator";
 import { defineSuite as createExampleSuite } from "./scenarios";
 
+/*
 const sutHost = "127.0.0.1";
 const sutPort = 1410;
 const sut = new TcpServer(sutPort, (conn: TcpConnection) => new SutConnection(conn));
@@ -28,3 +30,6 @@ function createOrchestrator() {
     senders.addSender("EM2", new ClientEmulator("EM2", sutHost, sutPort, orch));
     return orch;
 }
+*/
+
+demoExpectationFramework();

@@ -1,70 +1,84 @@
 import { Message } from "./msg-base";
-import { ResultType } from "./test";
-
-export interface Test {
-    name: string;
-    type: string;
-    onFailure: "stop" | "continue";
-    description?: string;
-    sourceRef?: string;
-}
-
-export type TestCase<T = void> = (data?: T) => TestResult;
-export type TestFactory = (definition: Test) => TestCase
-
-export interface TestResult {
-    resultType: ResultType;
-    duration?: number;
-    test: Test;
-    description?: string;
-    childResults?: TestResult[];
-}
-
-export function throwTestError(test: Test, error: string) {
-    throw new Error(`Error in test "${test.name}": ${error}`);
-}
+import { Test, TestDefinition, TestResult, throwTestError } from "./test";
+import { TestFactory } from "./test-types";
 
 interface Lib {
     [key: string]: Function | Lib;
 }
 
-const lib: Lib = {
-}
-
-const testTypes: Record<string, TestFactory> = {
+const FACTORIES: Record<string, TestFactory> = {
     "assert": AssertionFactory
 }
 
 export function registerTestFactory(type: string, factory: TestFactory) {
-    if (testTypes[type]) throw new Error(`Factory type "${type}" is already registered.`);
-    testTypes[type] = factory;
+    if (FACTORIES[type]) throw new Error(`Factory type "${type}" is already registered.`);
+    FACTORIES[type] = factory;
 }
 
-export function createTest(definition: Test) {
+export function createTest(definition: TestDefinition) {
     const type = definition?.type;
     if (!type) throwTestError(definition, "Missing test type.");
-    const fac = testTypes[definition?.type];
+    const fac = FACTORIES[definition?.type || ""];
     if (!fac) throwTestError(definition, `Test Type "${type}" not found.`);
     return fac(definition);
 }
 
-export interface Assertion<T = any> extends Test {
+const LIBRARIES: Lib = {
+}
+
+export function addToLib(path: string, value: Lib | Function) {
+    const tokens = path.split(".");
+    let node = LIBRARIES;
+    let currentPath = "";
+    for (let i = 0; i < tokens.length; i++) {
+        const name = tokens[i];
+        currentPath = currentPath ? `${currentPath}.${name}` : name;
+        if (i === tokens.length - 1) {
+            if (Object.prototype.hasOwnProperty.call(node, name)) {
+                throw new Error(`Node already defined at path: ${currentPath}`);
+            }
+            node[name] = value;
+        } else {
+            if (!Object.prototype.hasOwnProperty.call(node, name)) {
+                node[name] = {};
+            } else if (typeof node[name] !== "object" || node[name] === null) {
+                throw new Error(`Cannot create intermediate node at ${currentPath}`);
+            }
+            node = node[name];
+        }
+    }
+}
+
+///////////////
+
+export interface AssertionContext {
+    lib: Lib,
+    test: Test,
+    data?: any
+}
+
+export interface Assertion<T = any> extends TestDefinition {
+    type: "assert";
     assertion: string;
     data?: T;
 }
 
-export function AssertionFactory(def: Assertion): TestCase {
+export function AssertionFactory(def: Assertion): Test {
     const assert = new Function("lib", "test", "data", "return " + def.assertion)
-    return function assertionTest(data?: any) {
-        data = data || def.data;
-        if (!data) throw new Error("No data for assertion test: " + JSON.stringify(def));
-        const res = assert(lib, def, data);
-        return {
-            test: def,
-            resultType: res ? "Pass" : "Fail",
-            ...(res ? {} : { description: "Assertion Failed" })
+    const newTest: Test ={
+        definition: def,
+        test(data?: any) {
+            data = data || def.data;
+            if (!data) throw new Error("No data for assertion test: " + JSON.stringify(def));
+            const res = assert(LIBRARIES, def, data);
+            return Promise.resolve({
+                test: newTest,
+                resultType: res ? "Pass" : "Fail",
+                ...(res ? {} : { description: "Assertion Failed" })
+            });
         }
     }
+    return newTest;
 }
 
 export interface MessageTest extends Test {

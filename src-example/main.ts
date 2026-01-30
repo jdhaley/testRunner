@@ -1,8 +1,8 @@
 import { Orchestrator } from "../src/msg";
 import { Message, Senders } from "../src/msg-base";
 import { TcpConnection, TcpServer } from "../src/tcp";
-import { demoExpectationFramework } from "../src/test-expectation";
-import { reportResult } from "../src/test-report";
+import { demoExpectationFramework } from "../src/testing/test-expectation";
+import { reportResult } from "../src/testing/test-report";
 import { ClientEmulator, SutConnection } from "./emulator";
 import { defineSuite as createExampleSuite } from "./scenarios";
 

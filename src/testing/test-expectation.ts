@@ -24,7 +24,7 @@ interface ExpectType {
     run(value: any, expect: any): boolean;
 }
 
-type type = "number" | "string" | "object" | "array" | "boolean" | "date" | "any"
+type type = "number" | "string" | "object" | "array" | "boolean" | "date" | "any" | "scalar";
 interface Arg {
     name?: string;
     type: type;
@@ -32,6 +32,10 @@ interface Arg {
     validate?: string;
 }
 
+export function addExpectationType(type: ExpectType) {
+    if (TYPES[type.name]) throw new Error(`Expectation type "${type.name}" is already defined.`);
+    TYPES[type.name] = type;
+}
 /*
 expect(actual)
   .toBe(expected)           // strict equality
@@ -65,6 +69,15 @@ const TYPES: ExpectType[] = [
         run(value: any, expect: any) {
             // Simple deep equality (replace with a robust deepEqual as needed)
             return JSON.stringify(value) === JSON.stringify(expect);
+        }
+    },
+    {
+        name: "toBeOneOf",
+        args: [{ type: "array" }],
+        failureMessage: "be one of",
+        run(value: any, expect: any) {
+            // Simple deep equality (replace with a robust deepEqual as needed)
+            return expect instanceof Array && expect.includes(value);
         }
     },
     {
@@ -237,7 +250,6 @@ export class ExpectationError extends Error {
         super(typeof error === "string" ? error : "Error: " + error.message);
     }
 }
-
 
 // Demo function for the expectation framework
 export async function demoExpectationFramework() {

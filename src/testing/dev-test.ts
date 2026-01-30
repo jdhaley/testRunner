@@ -1,4 +1,4 @@
-import { Message } from "./msg-base";
+import { Message } from "../msg-base";
 import { Test, TestDefinition, TestResult, throwTestError } from "./test";
 import { TestFactory } from "./test-types";
 

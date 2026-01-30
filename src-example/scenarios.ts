@@ -1,7 +1,7 @@
 import { Orchestrator } from "../src/msg";
 import { Message } from "../src/msg-base";
-import { Tests } from "../src/test";
-import { MessageTest, Step, StepDefinition, testForExpected } from "../src/test-msg";
+import { Tests } from "../src/testing/test";
+import { MessageTest, Step, StepDefinition, testForExpected } from "../src/testing/test-msg";
 
 const tst1: MessageTest = {
     definition: {

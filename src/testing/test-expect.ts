@@ -3,11 +3,11 @@ import { reportResult } from "./test-report";
 import { registerTestFactory } from "./test-types";
 
 export interface Expects extends TestDefinition {
-    expectations: Expectation[]
+    expects: Expect[]
 }
 
-export interface Expectation {
-    expect: string;
+export interface Expect {
+    typeName: string;
     not?: boolean;
     //ANY value (path, array, etc)
     value: any;
@@ -193,7 +193,7 @@ export function ExpectsTestFactory(def: Expects): Test<any> {
         definition: def,
         async test(data?: any): Promise<TestResult> {
             const results: string[] = [];
-            for (const exp of def.expectations) {
+            for (const exp of def.expects) {
                 const result = runExpectation(exp, data);
                 if (result) results.push(result);
             }
@@ -217,9 +217,9 @@ export function ExpectsTestFactory(def: Expects): Test<any> {
 
 registerTestFactory("expects", ExpectsTestFactory);
 
-function runExpectation(exp: Expectation, data: any): string {
-    const type = TYPE_MAP[exp.expect];
-    if (!type) throw new Error(`Expectation "${exp.expect}" is not defined.`);
+function runExpectation(exp: Expect, data: any): string {
+    const type = TYPE_MAP[exp.typeName];
+    if (!type) throw new Error(`Expectation "${exp.typeName}" is not defined.`);
     let pass: boolean;
     try {
         pass = type.run(data, exp.value);
@@ -231,7 +231,7 @@ function runExpectation(exp: Expectation, data: any): string {
     }
 }
 
-function createDescription(exp: Expectation, type: ExpectType, value: any) {
+function createDescription(exp: Expect, type: ExpectType, value: any) {
     let desc = `Expected value "${value}" to `;
     if (exp.not) desc += "not ";
     const failure = exp.failureMessage || type.failureMessage;
@@ -242,7 +242,7 @@ function createDescription(exp: Expectation, type: ExpectType, value: any) {
 
 export class ExpectationError extends Error {
     constructor(
-        public expectation: Expectation,
+        public expectation: Expect,
         public type: ExpectType,
         public data: any,
         error: string | Error
@@ -256,13 +256,13 @@ export async function demoExpectationFramework() {
     // Example test definition
     const testDef: Expects = {
         name: "Demo Expects Test",
-        expectations: [
-            { expect: "toBe", value: 42, not: true },
-            { expect: "toBeGreaterThan", value: 100 },
-            { expect: "toBeLessThan", value: 50, not: true },
-            { expect: "toBeTruthy", value: true },
-            { expect: "toContain", value: 2 },
-            { expect: "toContainString", value: "hello world" }
+        expects: [
+            { typeName: "toBe", value: 42, not: true },
+            { typeName: "toBeGreaterThan", value: 100 },
+            { typeName: "toBeLessThan", value: 50, not: true },
+            { typeName: "toBeTruthy", value: true },
+            { typeName: "toContain", value: 2 },
+            { typeName: "toContainString", value: "hello world" }
         ]
     };
 
